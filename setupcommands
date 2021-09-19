@@ -1,10 +1,135 @@
+
+#Your mission is a simple one, you were brought into the Sock Acme organization as a SRE. Day 5 on the job and the world is imploding around you, your team is tired and you are finding yourself working long hours troubleshooting your microservices. Customers are complaining that they can't buy socks, your website is going up and down like a yo-yo and your boss is calling you nonstop. You don't have time to go out and deploy APM on your application, that is too much work and plus you don't have the resources to do that. Pixie promises to be fast to configure and should help you. The big questions you have: A: How will it help me B: How do you configure it C: Would it be possible to blend the data coming from Pixie into some really cool dashboards that the business can use not only for SRE purposes but also for business intelligence.  
+
+# ssh to your instance / vms
+ssh username@ipaddress
+
+#enter password 
+
+#update the system
+apt-get update && apt-get upgrade
+
+#install microk8s
+sudo snap install microk8s --classic --channel=1.21/stable
+
+#MicroK8s uses the minimum of components for a pure, lightweight Kubernetes. However, plenty of extra features are available with a few keystrokes using “add-ons” - pre-packaged components that will provide extra capabilities for your Kubernetes, from simple DNS management to machine learning with Kubeflow!
+
+#microk8s set up packages
+microk8s enable dns dashboard storage helm3 
+
+#run the following command to check the deployment status
+microk8s kubectl get all --all-namespaces
+
+#####lets run a couple of commands to open the firewall
+sudo ufw allow in on cni0 && sudo ufw allow out on cni0
+sudo ufw default allow routed 
+
+#MicroK8s creates a group to enable seamless usage of commands which require admin privilege. To add your current user to the group and gain access to the .kube caching directory, run the following two commands
+
+sudo usermod -a -G microk8s $USER
+sudo chown -f -R $USER ~/.kube
+
+#You will also need to re-enter the session for the group update to take place
+su - $USER
+
+#remember we installed microk8s which means in order to access the kubectl commands we need to type in "microk8s kubectl" which is annoying and would require us to change any setup helm charts. lets add some aliases.
+
+alias kubectl='microk8s kubectl'
+alias helm='microk8s helm3'
+
+#Now lets install New Relic so that we can troubleshoot our cluster as we are deploying stuff. Log into New Relic and go to "Add More Data" and add the Kubernetes integration. 
+
+#for the cluster name enter "microk8s-cluster" and leave all the other checks on their defaults
+
+#select "helm 3" as the helm chart type and then copy and paste your integration snippet
+
+#now you can check the deployment status with the following command
+microk8s kubectl get all --all-namespaces #run this to check for deployment status (notice some of the assets will not show as ready). go take a break here and come back in 10 minutes
+
+##issue seeing "Error: couldn't find key cluster-id in Secret newrelic/pl-cluster-secrets" in cluster events
+
+###may want to pivot to manifest based deploy instead
+
+#get skaffold 
+curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
+sudo install skaffold /usr/local/bin/
+
+#clone microservices demo
+git clone https://github.com/microservices-demo/microservices-demo
+
+#navigate into kubernetes demo folder 
+
+~/microservices-demo/deploy/kubernetes
+
+#deploy the manifest for sockshop
+kubectl apply -f complete-demo.yaml
+
+#run command to get all assets in kubernetes make sure everything is deployed 
+kubectl get all --all-namespaces 
+
+#or
+
+kubectl get service front-end --namespace sock-shop 
+
+#now find out the open port for the app (30001 in the example below) and then navigate in your browser to your server ip and port number ex: http://155.138.160.38:30001
+
+sock-shop     service/front-end                                NodePort    10.152.183.189   <none>        80:30001/TCP                                   80s
+
+#you should be able to navigate to the port that you see there 
+
+#congrats you have deployed an app in kubernetes with New Relic instrumented! 
+
+
+#lets send it some load. go through the site, add some items to cart, make an account, go and checkout some socks! check the orders page etc.  after you generate load go and check out pixie.  look at the pixie docs to learn about the capabilities
+
+http://155.138.160.38:30001/
+
+#Now its time to get creative.  Lets see if you can create a dashboard to answer the following:
+- Xxxx
+- Xxxxx
+- Xxxxx
+- Xxxx
+
+#After the dashboard is set up work with your partner to create a five minute pitch to your management team that provides an overview of your observability solution 
+
+
+### Content below this line is a scratchpad
+
+
+
+
+helm init --stable-repo-url https://charts.helm.sh/stable
+helm init --upgrade 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 cluster name: microk8s-cluster
 
 apt-get update && apt-get upgrade
 sudo snap install microk8s --classic --channel=1.21
+
 sudo ufw allow in on cni0 && sudo ufw allow out on cni0
-sudo ufw default allow routed
-microk8s enable dns dashboard storage helm3
+sudo ufw default allow routed 
+microk8s enable dns dashboard storage helm metallb
 microk8s kubectl get all --all-namespaces #run this to check for deployment status
 #run to get an alias going of microk8s
 alias kubectl='microk8s kubectl'
@@ -84,3 +209,22 @@ snap install microk8s
 copy git for socks shop
 deploy socks shop
 
+
+
+kubectl apply -f https://raw.githubusercontent.com/pixie-labs/pixie/main/k8s/operator/crd/base/px.dev_viziers.yaml && \
+kubectl apply -f https://raw.githubusercontent.com/pixie-labs/pixie/main/k8s/operator/helm/crds/olm_crd.yaml && \
+helm repo add newrelic https://helm-charts.newrelic.com && helm repo update && \
+helm upgrade --install newrelic-bundle newrelic/nri-bundle \
+ --set global.licenseKey=c12615158aa1b02220b55a11483a05ec2f03d105 \
+ --set global.cluster=microk8s-cluster \
+ --namespace=newrelic \
+ --set newrelic-infrastructure.privileged=true \
+ --set ksm.enabled=true \
+ --set prometheus.enabled=true \
+ --set kubeEvents.enabled=true \
+ --set logging.enabled=true \
+ --set newrelic-pixie.enabled=true \
+ --set newrelic-pixie.apiKey=px-api-36b09d4f-8531-4ccd-8251-0f5b6b77f712 \
+ --set pixie-chart.enabled=true \
+ --set pixie-chart.deployKey=px-dep-b0b3b17e-ff62-41c4-b21d-e2b85c53c858 \
+ --set pixie-chart.clusterName=microk8s-cluster 
