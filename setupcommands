@@ -1,0 +1,86 @@
+cluster name: microk8s-cluster
+
+apt-get update && apt-get upgrade
+sudo snap install microk8s --classic --channel=1.21
+sudo ufw allow in on cni0 && sudo ufw allow out on cni0
+sudo ufw default allow routed
+microk8s enable dns dashboard storage helm3
+microk8s kubectl get all --all-namespaces #run this to check for deployment status
+#run to get an alias going of microk8s
+alias kubectl='microk8s kubectl'
+alias helm='microk8s helm3'
+
+sudo usermod -a -G microk8s $USER
+sudo chown -f -R $USER ~/.kube
+sudo microk8s config > ~/.kube/config
+
+microk8s enable metallb
+
+kubectl -n px-sock-shop get svc front-end --watch
+
+
+microk8s enable storage
+microk8s enable dns
+microk8s enable helm3
+microk8s enable ingress
+
+
+microk8s enable registry
+microk8s.kubectl config view > $HOME/.kube/config
+
+alias kubectl='microk8s kubectl'
+
+
+
+microk8s kubectl apply -f https://raw.githubusercontent.com/pixie-labs/pixie/main/k8s/operator/crd/base/px.dev_viziers.yaml && \
+microk8s kubectl apply -f https://raw.githubusercontent.com/pixie-labs/pixie/main/k8s/operator/helm/crds/olm_crd.yaml && \
+microk8s helm3 repo add newrelic https://helm-charts.newrelic.com && microk8s helm repo update && \
+microk8s kubectl create namespace newrelic ; microk8s helm3 upgrade --install newrelic-bundle newrelic/nri-bundle \
+ --set global.licenseKey=c12615158aa1b02220b55a11483a05ec2f03d105 \
+ --set global.cluster=socks-shop2 \
+ --namespace=newrelic \
+ --set newrelic-infrastructure.privileged=true \
+ --set ksm.enabled=true \
+ --set prometheus.enabled=true \
+ --set kubeEvents.enabled=true \
+ --set logging.enabled=true \
+ --set newrelic-pixie.enabled=true \
+ --set newrelic-pixie.apiKey=px-api-36b09d4f-8531-4ccd-8251-0f5b6b77f712 \
+ --set pixie-chart.enabled=true \
+ --set pixie-chart.deployKey=px-dep-b0b3b17e-ff62-41c4-b21d-e2b85c53c858 \
+ --set pixie-chart.clusterName=socks-shop2 
+
+
+
+
+
+
+
+
+
+
+
+
+snap install kubectl —classic
+
+
+sudo snap install microk8s --classic --channel=1.21
+
+ sudo snap install microk8s --classic --channel=1.21
+microk8s status --wait-ready
+
+
+microk8s kubectl create -f deploy/kubernetes/manifests/sock-shop-ns.yaml -f deploy/kubernetes/manifests
+
+git clone https://github.com/microservices-demo/microservices-demo
+
+
+https://microservices-demo.github.io/deployment/kubernetes-start.html
+
+
+-f complete-demo.yaml
+
+snap install microk8s 
+copy git for socks shop
+deploy socks shop
+
