@@ -1,0 +1,10 @@
+Machine spec:
+
+ami: Ubuntu 18.4
+m5.large 
+storage: 35 gigs
+
+Steps to provision:
+
+1. Provision through UI.
+2. Make it accessible through Username/Password https://rakeshwrites.medium.com/how-to-enable-password-authentication-in-aws-ec2-instances-26fbdddd74b0
